@@ -1,15 +1,14 @@
 #------------------------------------------------
 # INITIAL DEFINITIONS
 #------------------------------------------------
-%define PNAME gatk
+%define   PNAME gatk
 Version:  3.4.46
-Release:  2
+Release:  3
 License:  Broad Institute Software License Agreement
 Group:    Applications/Life Sciences
 Source:   GenomeAnalysisTK-3.4-46.tar.bz2
 Packager: TACC - wallen@tacc.utexas.edu
 Summary:  GATK - Genome Analysis Toolkit
-Prefix:   /opt/apps
 
 ## System Definitions
 %include ./include/system-defines.inc
@@ -28,19 +27,14 @@ Prefix:   /opt/apps
 The Genome Analysis Toolkit or GATK is a software package developed at the Broad Institute to analyze high-throughput sequencing data. The toolkit offers a wide variety of tools, with a primary focus on variant discovery and genotyping as well as strong emphasis on data quality assurance. Its robust architecture, powerful processing engine and high-performance computing features make it capable of taking on projects of any size.
 
 ## PREP
-# Use -n <name> if source file different from <name>-<version>.tar.gz
 %prep
 rm -rf $RPM_BUILD_ROOT/%{INSTALL_DIR}
 rm -rf $RPM_BUILD_ROOT/%{MODULE_DIR}
 
-# do this so GATK has somewhere to unpack
-mkdir -p $RPM_BUILD_ROOT/%{INSTALL_DIR}
-
 ## SETUP
-# Run the setup macro - this removes old copies, then unpackages the program zip file
-# from ~SOURCES into ~BUILD
+# Use -n <name> if source file different from <name>-<version>.tar.gz
 # the -c option creates a dir and changes to it before unpacking
-%setup -c
+%setup -c -n GenomeAnalysisTK-3.4
 
 ## BUILD
 %build
@@ -52,6 +46,8 @@ mkdir -p $RPM_BUILD_ROOT/%{INSTALL_DIR}
 
 # Start with a clean environment
 %include ./include/%{PLATFORM}/system-load.inc
+
+# Create a directory
 mkdir -p $RPM_BUILD_ROOT/%{INSTALL_DIR}
 
 #--------------------------------------
@@ -75,11 +71,15 @@ mkdir -p $RPM_BUILD_ROOT/%{MODULE_DIR}
 cat > $RPM_BUILD_ROOT/%{MODULE_DIR}/%{version}.lua << 'EOF'
 help (
 [[
+
 This module loads %{PNAME} version %{version}
 Documentation for %{PNAME} is available online at: https://www.broadinstitute.org/gatk/download/
 
-The executables can be found in %{MODULE_VAR}_DIR
+The executable can be found in %{MODULE_VAR}_DIR
 Resources, including test files, can be found in %{MODULE_VAR}_RESOURCES
+
+Test with:
+java -jar $TACC_GATK_DIR/GenomeAnalysisTK.jar -T CountReads -R $TACC_GATK_RESOURCES/exampleFASTA.fasta -I $TACC_GATK_RESOURCES/exampleBAM.bam                                                                          
 
 Version %{version}
 
@@ -137,4 +137,13 @@ cd /tmp
 
 # Remove the installation files now that the RPM has been generated
 rm -rf $RPM_BUILD_ROOT
+
+
+# In SPECS dir:
+# ./build_rpm.sh gatk-3.4.46-3.spec
+#
+# In apps dir: 
+# export RPM_DBPATH=$PWD/db/
+# rpm --dbpath $PWD/db --relocate /opt/apps=$PWD -Uvh --force --nodeps /path/to/rpm/file/rpm_file.rpm
+# sed -i 's?opt/apps?home/03439/wallen/hikari/apps?g' /path/to/modulefiles/package/version.lua
 
