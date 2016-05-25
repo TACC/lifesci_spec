@@ -100,11 +100,11 @@ Please refer to http://trinityrnaseq.sourceforge.net/#running_trinity for help r
 
 Version %{version}
 ]])
-whatis("Name: ${PNAME}")
+whatis("Name: %{PNAME}")
 whatis("Version: %{version}")
 whatis("Category: computational biology, transcriptomics")
 whatis("Keywords: Biology, Assembly, RNAseq, Transcriptome")
-whatis("URL: http://trinityrnaseq.sourceforge.net/")
+whatis("URL: http://trinityrnaseq.github.io/")
 whatis("Description: Package for RNA-Seq de novo Assembly")
 
 prepend_path("PATH"       	, "%{INSTALL_DIR}/")
