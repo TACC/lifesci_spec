@@ -143,5 +143,5 @@ rm -rf $RPM_BUILD_ROOT
 # In apps dir: 
 # export RPM_DBPATH=$PWD/db/
 # rpm --dbpath $PWD/db --relocate /opt/apps=$PWD -Uvh --force --nodeps /path/to/rpm/file/rpm_file.rpm
-# sed -i 's?opt/apps?home/03439/wallen/hikari/apps?g' /path/to/modulefiles/package/version.lua
+# sed -i 's?opt/apps?work/03439/wallen/hikari/apps?g' /path/to/modulefiles/package/version.lua
 
