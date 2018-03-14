@@ -1,13 +1,16 @@
-%define PNAME fastqc
-Summary:    FastQC - A quality control application for high throughput sequence data
-Version: 0.11.5
-License:    GPL
-URL:        http://www.bioinformatics.babraham.ac.uk/projects/fastqc/
-Packager:   TACC - jawon@tacc.utexas.edu
-Source:     http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.5.zip
-Vendor:     Babraham Institute
+%define PNAME perl
+Version: 5.22.1
+Release: 1
+Summary: PERL
+License: GPL
 Group: Applications/Life Sciences
-Release:   1
+Source: http://www.cpan.org/src/5.0/perl-5.22.1.tar.gz
+URL: http://www.cpan.org
+Packager: TACC - gzynda@tacc.utexas.edu
+
+#------------------------------------------------
+# INITIAL DEFINITIONS
+#------------------------------------------------
 
 ## System Definitions
 %include ./include/system-defines.inc
@@ -19,11 +22,11 @@ Release:   1
 ## directory and name definitions for relocatable RPMs
 %include ./include/name-defines.inc
 
-%define MODULE_VAR  %{MODULE_VAR_PREFIX}FASTQC
+%define MODULE_VAR  %{MODULE_VAR_PREFIX}PERL
 
 ## PACKAGE DESCRIPTION
 %description
-FastQC is an application which takes a FastQ file and runs a series of tests on it to generate a comprehensive QC report.
+Perl built with intel.
 
 ## PREP
 # Use -n <name> if source file different from <name>-<version>.tar.gz
@@ -32,8 +35,7 @@ rm -rf $RPM_BUILD_ROOT/%{INSTALL_DIR}
 rm -rf $RPM_BUILD_ROOT/%{MODULE_DIR}
 
 ## SETUP
-#%setup -n %{PNAME}-%{version}
-%setup -n FastQC
+%setup -n %{PNAME}-%{version}
 
 ## BUILD
 %build
@@ -47,50 +49,63 @@ rm -rf $RPM_BUILD_ROOT/%{MODULE_DIR}
 %include ./include/%{PLATFORM}/system-load.inc
 mkdir -p $RPM_BUILD_ROOT/%{INSTALL_DIR}
 
-#--------------------------------------
-## Install Steps Start
+if [ "%{PLATFORM}" != "ls5" ]
+then
+	module purge
+	module load TACC
+fi
 
-echo "%{PNAME} is being packaged from a vendor-supplied binary distribution"
+ml gcc
 
-## Install Steps End
-#--------------------------------------
-chmod 755 fastqc
-cp -R ./* $RPM_BUILD_ROOT/%{INSTALL_DIR}
+sed -i 's/dbmclose();/dbmclose(db);/' ext/ODBM_File/ODBM_File.xs
+./Configure -Dcc=gcc -Dusethreads -des -Doptimize='-O3 -march=sandybridge -mtune=haswell' -Dprefix=%{INSTALL_DIR} -Duserelocatableinc
+#./Configure -Dusethreads -des -Dcc=icc -Dld=icc -Dcxx=icpc -Accflags='-gcc -fPIC' -Doptimize='-O3 -xAVX -axCORE-AVX2' -Dprefix=%{INSTALL_DIR}
+make -j 4
+#export LD_LIBRARY_PATH=$PWD:$LD_LIBRARY_PATH
+make test
+make install DESTDIR=$RPM_BUILD_ROOT
 
+## Make Samtools
+# prefix with install_dir
+# install destdir to rpm_build_root
 
 #------------------------------------------------
 # MODULEFILE CREATION
 #------------------------------------------------
 mkdir -p $RPM_BUILD_ROOT/%{MODULE_DIR}
-
-#------------------------------------------------
-## Modulefile Start
 cat > $RPM_BUILD_ROOT/%{MODULE_DIR}/%{version}.lua << 'EOF'
 help (
 [[
-This module loads %{PNAME} built with %{comp_fam}.
-Documentation for %{PNAME} is available online at http://www.bioinformatics.babraham.ac.uk/projects/fastqc
-The executables are added on to path
+Insert help
+The %{PNAME} module file defines the following environment variables:
+	%{MODULE_VAR}_DIR - the location of the %{PNAME} distribution
+	%{MODULE_VAR}_BIN - the location of the %{PNAME} binaries
+	%{MODULE_VAR}_LIB - the location of the %{PNAME} libraries
+	%{MODULE_VAR}_LIBEXEC - the location of the %{PNAME} libexec files
+	%{MODULE_VAR}_SHARE - the location of the %{PNAME} man files
+
+Documentation can be found online at %{url}
 
 Version %{version}
-
 ]])
 
 whatis("Name: %{PNAME}")
 whatis("Version: %{version}")
 whatis("Category: computational biology, genomics")
-whatis("Keywords: Biology, Genomics, Sequencing, FastQ, Quality Control")
-whatis("Description: fastqc - A Quality Control application for FastQ files")
-whatis("URL: http://www.bioinformatics.babraham.ac.uk/projects/fastqc")
+whatis("Keywords: ")
+whatis("URL: %{url}")
+whatis("Description: ")
 
-local fastqc_dir = "%{INSTALL_DIR}"
+family("perl")
+prepend_path("PATH",              "%{INSTALL_DIR}/bin")
+prepend_path("LD_LIBRARY_PATH",   "%{INSTALL_DIR}/lib")
+prepend_path("MANPATH",           "%{INSTALL_DIR}/man")
 
-setenv("%{MODULE_VAR}_DIR",	fastqc_dir)
-
-prepend_path("PATH",		fastqc_dir)
-
+setenv (     "%{MODULE_VAR}_DIR", "%{INSTALL_DIR}")
+setenv (     "%{MODULE_VAR}_BIN", "%{INSTALL_DIR}/bin")
+setenv (     "%{MODULE_VAR}_LIB", "%{INSTALL_DIR}/lib")
 EOF
-## Modulefile End
+## Module File End
 #--------------------------------------
 
 ## Lua syntax check
@@ -98,7 +113,7 @@ if [ -f $SPEC_DIR/checkModuleSyntax ]; then
     $SPEC_DIR/checkModuleSyntax $RPM_BUILD_ROOT/%{MODULE_DIR}/%{version}.lua
 fi
 
-## VERSION FILE
+##  VERSION FILE
 cat > $RPM_BUILD_ROOT%{MODULE_DIR}/.version.%{version} << 'EOF'
 #%Module3.1.1#################################################
 ##
@@ -107,17 +122,17 @@ cat > $RPM_BUILD_ROOT%{MODULE_DIR}/.version.%{version} << 'EOF'
 
 set     ModulesVersion      "%{version}"
 EOF
+#--------------------------------------
 
 #------------------------------------------------
 # FILES SECTION
 #------------------------------------------------
-#%files -n %{name}-%{comp_fam_ver}
 %files
 %defattr(-,root,install,)
 %{INSTALL_DIR}
 %{MODULE_DIR}
 
-## POST
+## POST 
 %post
 
 ## CLEAN UP

@@ -1,13 +1,17 @@
-%define PNAME fastqc
-Summary:    FastQC - A quality control application for high throughput sequence data
-Version: 0.11.4
-License:    GPL
-URL:        http://www.bioinformatics.babraham.ac.uk/projects/fastqc/
-Packager:   TACC - jawon@tacc.utexas.edu
-Source:     http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.4.zip
-Vendor:     Babraham Institute
+%define PNAME aspera-connect
+Version: 3.6.1.110647
+Release: 1
+License: IBM License
+Vendor: IBM
+Packager: TACC - gzynda@tacc.utexas.edu
+Source: http://download.asperasoft.com/download/sw/connect/3.6.1/aspera-connect-3.6.1.110647-linux-64.tar.gz
+Summary: Aspera Connect client
 Group: Applications/Life Sciences
-Release:   1
+Url: http://download.asperasoft.com/download/docs/ascp/3.5.2/html/index.html#dita/ascp_usage.html
+
+#------------------------------------------------
+# INITIAL DEFINITIONS
+#------------------------------------------------
 
 ## System Definitions
 %include ./include/system-defines.inc
@@ -19,11 +23,11 @@ Release:   1
 ## directory and name definitions for relocatable RPMs
 %include ./include/name-defines.inc
 
-%define MODULE_VAR  %{MODULE_VAR_PREFIX}FASTQC
+%define MODULE_VAR  %{MODULE_VAR_PREFIX}ASPERA
 
 ## PACKAGE DESCRIPTION
 %description
-FastQC is an application which takes a FastQ file and runs a series of tests on it to generate a comprehensive QC report.
+The ascp (Aspera secure copy) executable is a command-line fasp transfer program.
 
 ## PREP
 # Use -n <name> if source file different from <name>-<version>.tar.gz
@@ -32,8 +36,7 @@ rm -rf $RPM_BUILD_ROOT/%{INSTALL_DIR}
 rm -rf $RPM_BUILD_ROOT/%{MODULE_DIR}
 
 ## SETUP
-#%setup -n %{PNAME}-%{version}
-%setup -n FastQC
+%setup -n %{PNAME}-%{version}-linux-64 -c
 
 ## BUILD
 %build
@@ -47,30 +50,45 @@ rm -rf $RPM_BUILD_ROOT/%{MODULE_DIR}
 %include ./include/%{PLATFORM}/system-load.inc
 mkdir -p $RPM_BUILD_ROOT/%{INSTALL_DIR}
 
-#--------------------------------------
-## Install Steps Start
+if [ "%{PLATFORM}" != "ls5" ]
+then
+	module purge
+	module load TACC
+fi
 
-echo "%{PNAME} is being packaged from a vendor-supplied binary distribution"
+export PREFIX=$RPM_BUILD_ROOT/%{INSTALL_DIR}
 
-## Install Steps End
-#--------------------------------------
-chmod 755 fastqc
-cp -R ./Templates ./fastqc  ./*.jar $RPM_BUILD_ROOT/%{INSTALL_DIR}
+## Patch
+patch aspera-connect-3.6.1.110647-linux-64.sh -i - <<'EOF'
+11c11
+< INSTALL_DIR=~/.aspera/connect
+---
+> INSTALL_DIR=$PREFIX
+EOF
 
+bash aspera-connect-3.6.1.110647-linux-64.sh
+
+rm $RPM_BUILD_ROOT/%{INSTALL_DIR}/etc/asperaconnect.path
+rm -rf $RPM_BUILD_ROOT/%{INSTALL_DIR}/var
+rm -rf $RPM_BUILD_ROOT/%{INSTALL_DIR}/res
+rm -rf $RPM_BUILD_ROOT/%{INSTALL_DIR}/localization
+# comes with a libc that breaks things
+rm -rf $RPM_BUILD_ROOT/%{INSTALL_DIR}/lib
 
 #------------------------------------------------
 # MODULEFILE CREATION
 #------------------------------------------------
 mkdir -p $RPM_BUILD_ROOT/%{MODULE_DIR}
-
-#------------------------------------------------
-## Modulefile Start
 cat > $RPM_BUILD_ROOT/%{MODULE_DIR}/%{version}.lua << 'EOF'
 help (
 [[
-This module loads %{PNAME} built with %{comp_fam}.
-Documentation for %{PNAME} is available online at http://www.bioinformatics.babraham.ac.uk/projects/fastqc
-The executables are added on to path
+The %{PNAME} module file defines the following environment variables:
+
+	%{MODULE_VAR}_DIR - the location of the %{PNAME} distribution
+	%{MODULE_VAR}_ASCP - the location of the ascp program
+	%{MODULE_VAR}_OPENSSH - the location of the openssh key
+
+Additinal documentation can be found online at %{URL}.
 
 Version %{version}
 
@@ -79,15 +97,15 @@ Version %{version}
 whatis("Name: %{PNAME}")
 whatis("Version: %{version}")
 whatis("Category: computational biology, genomics")
-whatis("Keywords: Biology, Genomics, Sequencing, FastQ, Quality Control")
-whatis("Description: fastqc - A Quality Control application for FastQ files")
-whatis("URL: http://www.bioinformatics.babraham.ac.uk/projects/fastqc")
+whatis("Keywords: transfer, ncbi, utility, genomics")
+whatis("Description: Aspera Connect client")
+whatis("URL: http://asperasoft.com/software/transfer-clients/")
 
-local fastqc_dir = "%{INSTALL_DIR}"
+setenv("%{MODULE_VAR}_DIR",	"%{INSTALL_DIR}/bin")
+setenv("%{MODULE_VAR}_ASCP",	"%{INSTALL_DIR}/bin/ascp")
+setenv("%{MODULE_VAR}_KEY",	"%{INSTALL_DIR}/etc/asperaweb_id_dsa.openssh")
 
-setenv("%{MODULE_VAR}_DIR",	fastqc_dir)
-
-prepend_path("PATH",		fastqc_dir)
+prepend_path("PATH",		"%{INSTALL_DIR}/bin")
 
 EOF
 ## Modulefile End
@@ -98,7 +116,7 @@ if [ -f $SPEC_DIR/checkModuleSyntax ]; then
     $SPEC_DIR/checkModuleSyntax $RPM_BUILD_ROOT/%{MODULE_DIR}/%{version}.lua
 fi
 
-## VERSION FILE
+##  VERSION FILE
 cat > $RPM_BUILD_ROOT%{MODULE_DIR}/.version.%{version} << 'EOF'
 #%Module3.1.1#################################################
 ##
@@ -107,17 +125,17 @@ cat > $RPM_BUILD_ROOT%{MODULE_DIR}/.version.%{version} << 'EOF'
 
 set     ModulesVersion      "%{version}"
 EOF
+#--------------------------------------
 
 #------------------------------------------------
 # FILES SECTION
 #------------------------------------------------
-#%files -n %{name}-%{comp_fam_ver}
 %files
 %defattr(-,root,install,)
 %{INSTALL_DIR}
 %{MODULE_DIR}
 
-## POST
+## POST 
 %post
 
 ## CLEAN UP
