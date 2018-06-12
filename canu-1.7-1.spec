@@ -189,6 +189,37 @@ make BUILDOPTIMIZED=1 DESTDIR=$RPM_BUILD_ROOT PREFIX=%{INSTALL_DIR} -j 48
 rm -rf ${BI}/Linux-amd64/obj
 cd $BI && mv Linux-amd64/* . && rm -rf Linux-amd64
 
+### New scontrol script with Array
+tee ${RPM_BUILD_ROOT}/%{INSTALL_DIR}/scontrol << 'EOF'
+#!/bin/bash
+
+/bin/scontrol show config | sed -e "s/\(MaxArraySize\s\+=\s\)0/\11000/"
+EOF
+
+
+### New sinfo script with actual memory values
+tee ${RPM_BUILD_ROOT}/%{INSTALL_DIR}/sinfo << 'EOF'
+#!/usr/bin/env python
+from subprocess import check_output
+
+cores2mem = {"96":"192000", "272":"96000"}
+
+orig = check_output(['/bin/sinfo', '--exact', '-o' "%N %D %c %m"])
+orig = orig.rstrip('\n').split('\n')
+
+# Print the header
+print orig[0]
+for line in orig[1:]:
+	tmpLine = line.split(' ')
+	# Substitute the corret memory specifications
+	if tmpLine[2] in cores2mem:
+		tmpLine[3] = cores2mem[tmpLine[2]]
+	print ' '.join(tmpLine)
+EOF
+
+### Make executable
+chmod +x ${RPM_BUILD_ROOT}/%{INSTALL_DIR}/s{info,control}
+
 #-----------------------  
 %endif # BUILD_PACKAGE |
 #-----------------------
@@ -219,6 +250,15 @@ The %{pkg_base_name} module file defines the following environment variables:
 
 for the location of the %{pkg_base_name} distribution.
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   This version of %{pkg_base_name} only supports
+           single node execution using the
+
+                    useGrid=false
+
+   paramter. TACC systems do NOT allow job arrays!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 Documentation: %{url}
 
 Version %{version}
@@ -232,6 +272,8 @@ whatis("Category: computational biology, genomics, assembly")
 whatis("Keywords: Biology, Genomics, assembly, long-reads, nanopore")
 whatis("Description: %{shortsummary}")
 whatis("URL: %{url}")
+
+prereq("python")
 
 prepend_path("PATH",		"%{INSTALL_DIR}/bin")
 
