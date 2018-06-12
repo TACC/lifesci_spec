@@ -25,16 +25,11 @@ Receiving objects: 100% (1568/1568), 5.78 MiB | 3.61 MiB/s, done.
 Resolving deltas: 100% (730/730), done.
 ```
 
-Enter the `SPECS` directory and checkout the `separate-rpms` branch for building RPMs on Stampede2.
+Then, enter the `SPECS` directory, and build your directory tree for building RPMs in `$WORK`.
 
 ```
 $ cd SPECS
-$ git checkout separate-rpms
-```
 
-Now that you are on the correct development branch, you just need to build your directory tree for building RPMs.
-
-```
 $ ./scripts/buildDirectories.sh
 An rpmbuild directory already exists here:
 /work/12345/user/rpmbuild
@@ -59,6 +54,8 @@ $ cd ../SOURCES
 $ wget http://zlib.net/fossils/zlib-1.2.8.tar.gz
 $ cd ../SPECS
 ```
+
+> note: Source files **must** live in the SOURCES directory
 
 ### Writing the spec file
 
@@ -492,8 +489,8 @@ Please request the following for installation:
 Done! You can now submit a collab ticket for the RPMs to be installed. After you submit your collab ticket, remember to commit your new spec file back to the repo.
 
 ```
-git pull origin separate-rpms
+git pull
 git add your-new.spec
 git commit -am "Just completed a new spec file"
-git push origin separate-rpms
+git push
 ```
