@@ -67,14 +67,15 @@ for rpm in "$@"; do
 done
 
 TF=/tmp/tmp_$(tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c 8)
-ssh -t $address bash -c "'mkdir $TF && cp $TOINSTALL $TF && sudo su - -c \"cp $TF/*rpm $RPMDIR/ && echo Done || echo Move failed; [ -e $TF] && rm -rf $TF\"'"
+ssh -t $address bash -c "'mkdir $TF && cp $TOINSTALL $TF && sudo su - -c \"cp $TF/*rpm $RPMDIR/ && echo Done || echo Move failed; [ -e $TF ] && rm -rf $TF\"'"
 
 for rpm in $TOINSTALL; do
 	if [[ $rpm == *"modulefile"* ]]; then
 		OUTSTR+="\n  rpm -ivh --nodeps --relocate /tmpmod=$MODLOC $RPMDIR/$(basename $rpm)"
-	fi
-	if [[ $rpm == *"package"* ]]; then
+	elif [[ $rpm == *"package"* ]]; then
 		OUTSTR+="\n  rpm -ivh --nodeps --relocate /tmprpm=$RPMLOC $RPMDIR/$(basename $rpm)"
+	else
+		OUTSTR+="\n  rpm -ivh --nodeps $RPMDIR/$(basename $rpm)"
 	fi
 done
 
