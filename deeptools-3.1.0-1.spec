@@ -115,6 +115,7 @@ Module file for %{pkg_base_name}
 # Manually load modules
 ##################################
 module load python2
+%define pyv %( bash -c 'echo $LOADEDMODULES | sed -e "s/:/\\n/g" | grep python2' )
 ##################################
 
 echo "Building the package?:    %{BUILD_PACKAGE}"
@@ -195,7 +196,7 @@ setenv("%{MODULE_VAR}_DIR",     "%{INSTALL_DIR}")
 setenv("%{MODULE_VAR}_BIN",	"%{INSTALL_DIR}/bin")
 setenv("%{MODULE_VAR}_LIB",	"%{INSTALL_DIR}/lib")
 
-depends_on("python2")
+depends_on("%{pyv}")
 EOF
   
 cat > $RPM_BUILD_ROOT/%{MODULE_DIR}/.version.%{version} << 'EOF'
