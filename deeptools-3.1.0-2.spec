@@ -44,7 +44,7 @@ Name:      %{pkg_name}
 Version:   %{pkg_version}
 ########################################
 
-Release:   1
+Release:   2
 License:   BSD
 Group:     Applications/Life Sciences
 URL:       https://github.com/deeptools/deepTools
@@ -115,7 +115,8 @@ Module file for %{pkg_base_name}
 # Manually load modules
 ##################################
 module load python2
-%define pyv %( bash -c 'echo $LOADEDMODULES | sed -e "s/:/\\n/g" | grep python2' )
+%define pyv %(bash -c 'module load python2 && echo ${LOADEDMODULES} | sed -e "s/:/\\n/g" | grep python2')
+echo 'hardcoding %{pyv}'
 ##################################
 
 echo "Building the package?:    %{BUILD_PACKAGE}"
@@ -141,6 +142,8 @@ echo "Building the modulefile?: %{BUILD_MODULEFILE}"
 
 # install
 export PYTHONUSERBASE=$RPM_BUILD_ROOT/%{INSTALL_DIR}
+mkdir -p ${RPM_BUILD_ROOT}/%{INSTALL_DIR}/lib/python2.7/site-packages
+chmod -R a+rX ${RPM_BUILD_ROOT}/%{INSTALL_DIR}
 pip install --user git+https://github.com/deeptools/deepTools.git@%{pkg_version}
 
 #-----------------------  
