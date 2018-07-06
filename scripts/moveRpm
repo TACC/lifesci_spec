@@ -43,6 +43,10 @@ case "$TACC_SYSTEM" in
 		RPMDIR=/admin/build/rpms/maverick/RPMS/x86_64
 		address=staff.${TACC_SYSTEM}.tacc.utexas.edu
 		;;
+	maverick2)
+		RPMDIR=/home1/jail-7.4/admin/build/admin/rpms/maverick2/RPMS/x86_64
+		address=staff.${TACC_SYSTEM}.tacc.utexas.edu
+		;;
 	hikari)
 		RPMDIR=/admin/build/rpms/hikari/RPMS/x86_64/08_lsci
 		address=staff.${TACC_SYSTEM}.tacc.utexas.edu
