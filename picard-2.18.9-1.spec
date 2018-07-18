@@ -21,7 +21,7 @@
 Summary: %{shortsummary}
 
 # Give the package a base name
-%define pkg_base_name picard
+%define pkg_base_name picard-tools
 
 # Create some macros (spec file variables)
 %define major_version 2
