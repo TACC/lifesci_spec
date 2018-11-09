@@ -25,6 +25,13 @@
   #### TACC Version is 16.0.1 while Cray version is 16.0.0.109
   %define comp_module intel/16.0.1
 %endif
+%if "%{is_intel18}" == "1"
+  %define comp_fam intel
+  %define comp_fam_ver intel18
+  %define comp_fam_name Intel
+  %define is_intel 1
+  %define comp_module intel/18.0.2
+%endif
 
 %if "%{comp_fam}" == "error"
   %{error: You must define which compiler you are using!}
