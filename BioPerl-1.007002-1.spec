@@ -1,5 +1,5 @@
 #
-# Greg Zynda
+# Name
 # 2017-08-01
 #
 # Important Build-Time Environment Variables (see name-defines.inc)
@@ -16,23 +16,23 @@
 # rpm -i --relocate /tmpmod=/opt/apps Bar-modulefile-1.1-1.x86_64.rpm
 # rpm -e Bar-package-1.1-1.x86_64 Bar-modulefile-1.1-1.x86_64
 
-%define shortsummary Memory-efficient short read (NGS) aligner
+%define shortsummary BioPerl is a toolkit of perl modules useful in bioinformatics solutions in Perl.
 Summary: %{shortsummary}
 
 # Give the package a base name
-%define pkg_base_name bowtie
+%define pkg_base_name bioperl
 
 # Create some macros (spec file variables)
 %define major_version 1
-%define minor_version 2
-%define patch_version 1.1
+%define minor_version 007002
+#%define patch_version 1
 
-%define pkg_version %{major_version}.%{minor_version}.%{patch_version}
+%define pkg_version %{major_version}.%{minor_version}
 
 ### Toggle On/Off ###
 %include ./include/system-defines.inc
 %include ./include/%{PLATFORM}/rpm-dir.inc                  
-%include ./include/%{PLATFORM}/compiler-defines.inc
+#%include ./include/%{PLATFORM}/compiler-defines.inc
 #%include ./include/%{PLATFORM}/mpi-defines.inc
 %include ./include/%{PLATFORM}/name-defines.inc
 ########################################
@@ -46,10 +46,11 @@ Version:   %{pkg_version}
 
 Release:   1
 License:   GPL
-Group:     Applications/Life Sciences
-URL:       http://bowtie-bio.sourceforge.net/index.shtml
+Group:     Libraries/Life Sciences
+URL:       http://www.bioperl.org/wiki/Main_Page
 Packager:  TACC - gzynda@tacc.utexas.edu
-Source:    %{pkg_base_name}-%{pkg_version}-src.zip
+#Source0:    http://www.cpan.org/authors/id/C/CJ/CJFIELDS/BioPerl-1.007001.tar.gz
+#Source1: /work/03076/gzynda/rpmbuild/SOURCES/db-6.1.26.NC.gz
 
 %package %{PACKAGE}
 Summary: %{shortsummary}
@@ -77,7 +78,7 @@ Module file for %{pkg_base_name}
   rm -rf $RPM_BUILD_ROOT/%{INSTALL_DIR}
 
 # Comment this out if pulling from git
-%setup -n %{pkg_base_name}-%{pkg_version}
+#%setup -n BioPerl-%{version} -a 1
 # If using multiple sources. Make sure that the "-n" names match.
 #%setup -T -D -a 1 -n %{pkg_base_name}-%{pkg_version}
 
@@ -108,13 +109,14 @@ Module file for %{pkg_base_name}
 ##################################
 # If using build_rpm
 ##################################
-%include ./include/%{PLATFORM}/compiler-load.inc
+#%include ./include/%{PLATFORM}/compiler-load.inc
 #%include ./include/%{PLATFORM}/mpi-load.inc
 #%include ./include/%{PLATFORM}/mpi-env-vars.inc
 ##################################
 # Manually load modules
 ##################################
 # module load
+ml purge
 ##################################
 
 echo "Building the package?:    %{BUILD_PACKAGE}"
@@ -138,182 +140,19 @@ echo "Building the modulefile?: %{BUILD_MODULEFILE}"
   # Insert Build/Install Instructions Here
   #========================================
 
-sed -i 's/$(PTHREAD_LIB) -ltbb/-ltbb -lstdc++ -lpthread/g' Makefile
-patch -p1 << "EOF"
-From b6446a7842bde9cae5248f2bf57f9b0df7e95de8 Mon Sep 17 00:00:00 2001
-From: Rone Charles <rone_charles@fastmail.com>
-Date: Thu, 23 Mar 2017 16:16:23 -0400
-Subject: [PATCH] Initial commit for adding support for Intel CPP compiler
+# make BioPerl
+BRID=${RPM_BUILD_ROOT}/%{INSTALL_DIR}
+export PATH="$BRID/bin${PATH+:}${PATH}"
+export PERL5LIB="$BRID/lib/perl5:${HOME}/perl5/lib/perl5${PERL5LIB+:}${PERL5LIB}"
+export PERL_LOCAL_LIB_ROOT="${BRID}{PERL_LOCAL_LIB_ROOT+:}${PERL_LOCAL_LIB_ROOT}"
+export PERL_MB_OPT="--install_base $BRID"
+export PERL_MM_OPT="INSTALL_BASE=$BRID"
 
-
-diff --git a/SeqAn-1.1/seqan/platform.h b/SeqAn-1.1/seqan/platform.h
-index d032011..b19f3e6 100644
---- a/SeqAn-1.1/seqan/platform.h
-+++ b/SeqAn-1.1/seqan/platform.h
-@@ -19,9 +19,11 @@
- #define finline __inline__
- 
- // default 64bit type
-+#if (!defined(__INTEL_COMPILER))
- #ifndef __int64
- typedef int64_t __int64;
- #endif
-+#endif
- 
- //define SEQAN_SWITCH_USE_FORWARDS to use generated forwards 
- #define SEQAN_SWITCH_USE_FORWARDS
-diff --git a/SeqAn-1.1/seqan/sequence/string_packed.h b/SeqAn-1.1/seqan/sequence/string_packed.h
-index 1f49943..619f880 100644
---- a/SeqAn-1.1/seqan/sequence/string_packed.h
-+++ b/SeqAn-1.1/seqan/sequence/string_packed.h
-@@ -273,7 +273,7 @@ struct Size<String<TValue, Packed<THostspec> > const>
- {
- 	typedef __int64 Type;
- };
--//*/
-+*/
- 
- //////////////////////////////////////////////////////////////////////////////
- //////////////////////////////////////////////////////////////////////////////
-diff --git a/endian_swap.h b/endian_swap.h
-index aec6295..591aa4a 100644
---- a/endian_swap.h
-+++ b/endian_swap.h
-@@ -90,10 +90,8 @@ static inline T endianizeU(T u, bool toBig) {
- 	}
- 	if(sizeof(T) == 4) {
- 		return endianSwapU32((uint32_t)u);
--	} else if(sizeof(T) == 8) {
--		return endianSwapU64((uint64_t)u);
- 	} else {
--		assert(false);
-+		return endianSwapU64((uint64_t)u);
- 	}
- }
- 
-@@ -108,10 +106,8 @@ static inline T endianizeI(T i, bool toBig) {
- 	}
- 	if(sizeof(T) == 4) {
- 		return endianSwapI32((int32_t)i);
--	} else if(sizeof(T) == 8) {
--		return endianSwapI64((int64_t)i);
- 	} else {
--		assert(false);
-+		return endianSwapI64((int64_t)i);
- 	}
- }
- 
-diff --git a/filebuf.h b/filebuf.h
-index d2abc46..b15c44a 100644
---- a/filebuf.h
-+++ b/filebuf.h
-@@ -309,7 +309,7 @@ public:
- 	/**
- 	 * Get current size of the last-N-chars buffer.
- 	 */
--	const size_t lastNLen() const {
-+	size_t lastNLen() const {
- 		return _lastn_cur;
- 	}
- 
-diff --git a/processor_support.h b/processor_support.h
-index f68ee65..b07d8dd 100644
---- a/processor_support.h
-+++ b/processor_support.h
-@@ -44,8 +44,8 @@ public:
- 
-     try {
- #if ( defined(USING_INTEL_COMPILER) || defined(USING_MSC_COMPILER) )
--        __cpuid((void *) &regs,0); // test if __cpuid() works, if not catch the exception
--        __cpuid((void *) &regs,0x1); // POPCNT bit is bit 23 in ECX
-+        __cpuid((int *) &regs,0); // test if __cpuid() works, if not catch the exception
-+        __cpuid((int *) &regs,0x1); // POPCNT bit is bit 23 in ECX
- #elif defined(USING_GCC_COMPILER)
-         __get_cpuid(0x1, &regs.EAX, &regs.EBX, &regs.ECX, &regs.EDX);
- #else
-diff --git a/word_io.h b/word_io.h
-index b2752a3..1ce977c 100644
---- a/word_io.h
-+++ b/word_io.h
-@@ -56,10 +56,8 @@ static inline T readU(std::istream& in, bool swap) {
- 	if(swap) {
- 		if(sizeof(T) == 4) {
- 			return endianSwapU32(x);
--		} else if(sizeof(T) == 8) {
--			return endianSwapU64(x);
- 		} else {
--			assert(false);
-+			return endianSwapU64(x);
- 		}
- 	} else {
- 		return x;
-@@ -76,10 +74,8 @@ static inline T readU(FILE* in, bool swap) {
- 	if(swap) {
- 		if(sizeof(T) == 4) {
- 			return endianSwapU32(x);
--		} else if(sizeof(T) == 8) {
--			return endianSwapU64(x);
- 		} else {
--			assert(false);
-+			return endianSwapU64(x);
- 		}
- 	} else {
- 		return x;
-@@ -94,10 +90,8 @@ static inline T readI(std::istream& in, bool swap) {
- 	if(swap) {
- 		if(sizeof(T) == 4) {
- 			return endianSwapI32(x);
--		} else if(sizeof(T) == 8) {
--			return endianSwapI64(x);
- 		} else {
--			assert(false);
-+			return endianSwapI64(x);
- 		}
- 	} else {
- 		return x;
-@@ -113,10 +107,8 @@ static inline T readI(FILE* in, bool swap) {
- 	if(swap) {
- 		if(sizeof(T) == 4) {
- 			return endianSwapI32(x);
--		} else if(sizeof(T) == 8) {
--			return endianSwapI64(x);
- 		} else {
--			assert(false);
-+			return endianSwapI64(x);
- 		}
- 	} else {
- 		return x;
--- 
-2.9.0
-EOF
-
-TR=$TBBROOT
-# Since LDFLAGS is not used in bowtie's compilation, we hijack EXTRA_FLAGS to carry the rpath payload
-
-case "%{PLATFORM}" in
-	ls5)
-		TL=${TR}/lib/intel64/gcc4.7
-		TI=${TR}/include
-		;;
-	stampede2)
-		TL=${TR}/lib/intel64/gcc4.7
-		TI=${TR}/include
-		;;
-	stampede)
-		TL=${TR}/lib/intel64/gcc4.4
-		TI=${TR}/include
-		;;
-	hikari)
-		TL=${TR}/lib/intel64/gcc4.4
-		TI=${TR}/include
-		;;
-	*)
-		echo "Please handle %{PLATFORM}"; exit 1
-		;;
-esac
-
-make RELEASE_BIN=1 CC=icc CXX=icpc AR=xiar WITH_AFFINITY=1 CXXFLAGS="%{TACC_OPT} -ipo" EXTRA_FLAGS="-I${TI} -L${TL} -Wl,-rpath,${TL}" prefix=%{INSTALL_DIR} DESTDIR=${RPM_BUILD_ROOT} -j1
-make RELEASE_BIN=1 WITH_AFFINITY=1 CXXFLAGS="%{TACC_OPT} -ipo" EXTRA_FLAGS="-I${TI} -L${TL} -Wl,-rpath,${TL}" prefix=%{INSTALL_DIR} DESTDIR=${RPM_BUILD_ROOT} -j1 install
+cpan -i JSON::PP
+cpan -i CPAN::Meta
+cpan -i TAP::Harness::Env
+cpan -i Module::Build
+cpan -i Bio::Perl
 
 #-----------------------  
 %endif # BUILD_PACKAGE |
@@ -341,6 +180,8 @@ The %{pkg_base_name} module file defines the following environment variables:
 
  - %{MODULE_VAR}_DIR
  - %{MODULE_VAR}_BIN
+ - %{MODULE_VAR}_LIB
+ - %{MODULE_VAR}_INC
 
 for the location of the %{pkg_base_name} distribution.
 
@@ -354,18 +195,19 @@ help(help_message,"\n")
 whatis("Name: %{pkg_base_name}")
 whatis("Version: %{version}")
 whatis("Category: computational biology, genomics")
-whatis("Keywords: Biology, Genomics, Alignment, Sequencing, NGS")
+whatis("Keywords: Biology, Genomics")
 whatis("Description: %{shortsummary}")
 whatis("URL: %{url}")
 
 prepend_path("PATH",		"%{INSTALL_DIR}/bin")
+prepend_path("LD_LIBRARY_PATH",	"%{INSTALL_DIR}/lib")
+prepend_path("MANPATH",		"%{INSTALL_DIR}/share/man")
+prepend_path("PERL5LIB",        "%{INSTALL_DIR}/lib/perl5")
 
 setenv("%{MODULE_VAR}_DIR",     "%{INSTALL_DIR}")
 setenv("%{MODULE_VAR}_BIN",	"%{INSTALL_DIR}/bin")
-
-%if "%{PLATFORM}" == "stampede2"
-always_load("zlib")
-%endif
+setenv("%{MODULE_VAR}_LIB",	"%{INSTALL_DIR}/lib")
+setenv("%{MODULE_VAR}_INC",	"%{INSTALL_DIR}/include")
 EOF
   
 cat > $RPM_BUILD_ROOT/%{MODULE_DIR}/.version.%{version} << 'EOF'

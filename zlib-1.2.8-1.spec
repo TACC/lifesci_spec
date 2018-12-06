@@ -142,13 +142,13 @@ echo "Building the modulefile?: %{BUILD_MODULEFILE}"
 
 # Source IPP
 tar -xzf $IPPROOT/examples/components_and_examples_lin_ps.tgz ./components/interfaces/ipp_zlib/zlib-1.2.8.patch
-source /opt/intel/compilers_and_libraries_2017.4.196/linux/ipp/bin/ippvars.sh intel64
+source ${IPPROOT}/bin/ippvars.sh intel64
 
 # Patch zlib
 patch -p1 < components/interfaces/ipp_zlib/zlib-%{version}.patch
 
 # Compile zlib
-source /opt/intel/compilers_and_libraries_2017.4.196/linux/bin/compilervars.sh intel64
+source ${ICC_BIN}/../compilervars.sh intel64
 export CFLAGS="-O3 %{TACC_OPT} -fPIC -m64 -DWITH_IPP -I$IPPROOT/include"
 export LDFLAGS="$IPPROOT/lib/intel64/libippdc.a $IPPROOT/lib/intel64/libipps.a $IPPROOT/lib/intel64/libippcore.a"
 #sed -i -e 's~\$(AR) \$(ARFLAGS) \$@ \$(OBJS)~\$(AR) \$(ARFLAGS) \$@ \$(OBJS) ${IPPROOT}/lib/intel64/libippdc.a ${IPPROOT}/lib/intel64/libipps.a ${IPPROOT}/lib/intel64/libippcore.a~' Makefile.in

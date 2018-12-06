@@ -116,7 +116,7 @@ Module file for %{name}
 ##################################
 # Manually load modules
 ##################################
-module use $WORK/public/apps/intel17/modulefiles
+module use $HOME/apps/intel18/modulefiles
 module load zlib
 ##################################
 

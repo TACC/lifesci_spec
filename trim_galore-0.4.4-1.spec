@@ -188,8 +188,7 @@ prepend_path("PATH",		"%{INSTALL_DIR}")
 
 setenv("%{MODULE_VAR}_DIR",     "%{INSTALL_DIR}")
 
-always_load("cutadapt","fastqc")
-prereq("cutadapt","fastqc")
+depends_on("cutadapt","fastqc")
 EOF
   
 cat > $RPM_BUILD_ROOT/%{MODULE_DIR}/.version.%{version} << 'EOF'

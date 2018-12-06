@@ -17,6 +17,7 @@ function askInput {
 	# RPM RPMDIR
 	echo -e "\nMove:\n - ${1}\nto\n - ${2}/?"
 	read -r -p "[Y/n] " response
+	[ -z "$response" ] && return 0
 	if [[ ! $response =~ ^([Yy]es|[Yy])$ ]]; then
 		return 1
 	fi
@@ -66,7 +67,11 @@ TOINSTALL=""
 
 for rpm in "$@"; do
 	if askInput $rpm $RPMDIR; then
-		TOINSTALL+=" $PWD/$rpm"
+		if [[ $rpm == /* ]]; then
+			TOINSTALL+=" $rpm"
+		else
+			TOINSTALL+=" $PWD/$rpm"
+		fi
 	fi
 done
 

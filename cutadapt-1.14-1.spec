@@ -116,7 +116,7 @@ Module file for %{name}
 ##################################
 # Manually load modules
 ##################################
-module load python
+module load python2
 ##################################
 
 echo "Building the package?:    %{BUILD_PACKAGE}"
@@ -198,7 +198,7 @@ prepend_path("PYTHONPATH",	pathJoin("%{INSTALL_DIR}", "lib/python2.7/site-packag
 setenv("%{MODULE_VAR}_DIR",     "%{INSTALL_DIR}")
 setenv("%{MODULE_VAR}_BIN",	pathJoin("%{INSTALL_DIR}", "bin"))
 
-always_load("python")
+depends_on("python2")
 EOF
   
 cat > $RPM_BUILD_ROOT/%{MODULE_DIR}/.version.%{version} << 'EOF'
