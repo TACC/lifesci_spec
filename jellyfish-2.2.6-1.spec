@@ -1,6 +1,6 @@
 #
-# Greg zynda
-# 2018-01-03
+# Name
+# 2017-08-01
 #
 # Important Build-Time Environment Variables (see name-defines.inc)
 # NO_PACKAGE=1    -> Do Not Build/Rebuild Package RPM
@@ -16,16 +16,16 @@
 # rpm -i --relocate /tmpmod=/opt/apps Bar-modulefile-1.1-1.x86_64.rpm
 # rpm -e Bar-package-1.1-1.x86_64 Bar-modulefile-1.1-1.x86_64
 
-%define shortsummary De novo RNA-Seq Assembler
+%define shortsummary A fast, lock-free approach for efficient parallel counting of occurrences of k-mers.
 Summary: %{shortsummary}
 
 # Give the package a base name
-%define pkg_base_name trinityrnaseq
+%define pkg_base_name jellyfish
 
 # Create some macros (spec file variables)
 %define major_version 2
-%define minor_version 5
-%define patch_version 1
+%define minor_version 2
+%define patch_version 6
 
 %define pkg_version %{major_version}.%{minor_version}.%{patch_version}
 
@@ -45,11 +45,11 @@ Version:   %{pkg_version}
 ########################################
 
 Release:   1
-License:   BSD
+License:   GPL
 Group:     Applications/Life Sciences
-URL:       https://github.com/trinityrnaseq/trinityrnaseq
-Packager:  TACC - email@tacc.utexas.edu
-Source:    Trinity-v%{pkg_version}.tar.gz
+URL:       http://www.cbcb.umd.edu/software/jellyfish/
+Packager:  TACC - gzynda@tacc.utexas.edu
+Source:    %{pkg_base_name}-%{pkg_version}.tar.gz
 
 %package %{PACKAGE}
 Summary: %{shortsummary}
@@ -77,7 +77,7 @@ Module file for %{pkg_base_name}
   rm -rf $RPM_BUILD_ROOT/%{INSTALL_DIR}
 
 # Comment this out if pulling from git
-%setup -n trinityrnaseq-Trinity-v%{pkg_version}
+%setup -n %{pkg_base_name}-%{pkg_version}
 # If using multiple sources. Make sure that the "-n" names match.
 #%setup -T -D -a 1 -n %{pkg_base_name}-%{pkg_version}
 
@@ -114,8 +114,7 @@ Module file for %{pkg_base_name}
 ##################################
 # Manually load modules
 ##################################
-module use ~/apps/intel17/modulefiles
-module load samtools/1.6 jellyfish/2.2.6 python2
+#module load python2
 ##################################
 
 echo "Building the package?:    %{BUILD_PACKAGE}"
@@ -139,105 +138,13 @@ echo "Building the modulefile?: %{BUILD_MODULEFILE}"
   # Insert Build/Install Instructions Here
   #========================================
 
+# Example configure and make
+export CFLAGS="-O3 %{TACC_OPT} -ipo"
 export CXXFLAGS="-O3 %{TACC_OPT} -ipo"
-export LDFLAGS="-Wl,-rpath,${ICC_LIB}"
-
-#------------------------------------------------
-# PATCH FILES
-#------------------------------------------------
-## Patch plugins
-patch trinity-plugins/Makefile -i - << 'EOF'
-11a12
-> 	rm -rf scaffold_iworm_contigs
-14,15c15
-< 	ln -sf ${TRIMMOMATIC_CODE} Trimmomatic
-< 
----
-> 	mv ${TRIMMOMATIC_CODE} Trimmomatic
-18,24c18
-< 	tar xvf samtools-1.3.1.tar.bz2
-< 	cd samtools-1.3.1 && ./configure --without-curses --prefix=`pwd`
-< ifeq ($(OS),Darwin)
-< 	sed -i.bak s/-rdynamic//g samtools-1.3.1/Makefile
-< endif
-< 	cd samtools-1.3.1 && $(MAKE)
-< 	mv samtools-1.3.1/samtools ./BIN/.
----
-> 	rm samtools-1.3.1.tar.bz2
-29a24,25
-> 	rm -rf seqtk-trinity*
-> 	rm BIN/README
-32,35c28
-< 	tar -zxvf ${JELLYFISH_CODE}.tar.gz && ln -sf ${JELLYFISH_CODE} tmp.jellyfish
-< 	cd ./tmp.jellyfish/ && ./configure CC=gcc CXX=g++ --enable-static --disable-shared --prefix=`pwd` && $(MAKE) LDFLAGS="-lpthread -all-static" AM_CPPFLAGS="-Wall -Wnon-virtual-dtor -I"`pwd`"/include"
-< 	mv tmp.jellyfish jellyfish
-< 
----
-> 	rm ${JELLYFISH_CODE}.tar.gz
-40a32
-> 	rm -rf ${PARAFLY_CODE}
-51c45,47
-< 	cd slclust && $(MAKE) install
----
-> 	cd slclust/src && make CXX=icpc CXXFLAGS="$(CFLAGS) -I../include -fast" install
-> 	mv slclust/bin/* BIN/
-> 	rm -rf slclust/* && mkdir slclust/bin && mv BIN/slclust slclust/bin/
-54c50
-< 	cd COLLECTL && tar xvf ${COLLECTL_CODE}.src.tar.gz && ln -sf ${COLLECTL_CODE} collectl
----
-> 	cd COLLECTL && tar xvf ${COLLECTL_CODE}.src.tar.gz && rm ${COLLECTL_CODE}.src.tar.gz && mv ${COLLECTL_CODE} collectl && rm -rf collectl/docs
-EOF
-## Patch main Makefile
-patch Makefile -i - << 'EOF'
-10,11c10,11
-<  INCHWORM_CONFIGURE_FLAGS = CXX=icpc CXXFLAGS="-fast"
-<  CHRYSALIS_MAKE_FLAGS = COMPILER=icpc
----
->  INCHWORM_CONFIGURE_FLAGS = CXX=icpc CXXFLAGS="$(CFLAGS) -no-prec-div"
->  CHRYSALIS_MAKE_FLAGS = COMPILER=icpc SYS_OPT="$(CFLAGS)" DEBUG=no
-EOF
-## Patch install tests
-patch util/support_scripts/trinity_install_tests.sh -i - << 'EOF'
-62c62
-< if [ -e "trinity-plugins/BIN/samtools" ]
----
-> if [ -x "$(which samtools 2>/dev/null)" ]
-EOF
-
-#------------------------------------------------
-# Make Trinity
-#------------------------------------------------
-make -j 8 TRINITY_COMPILER=intel
-make -j 8 TRINITY_COMPILER=intel plugins
-
-# Remove unnecessary things
-rm -rf trinityrnaseq.wiki
-rm Makefile
-rm -rf Butterfly/[^B]*
-back=$PWD
-# clean up Chrysalis
-cd Chrysalis
-mv analysis/ReadsToComponents.pl .
-find . -type f ! -executable | xargs -n 1 rm
-find . -mindepth 1 -maxdepth 1 -type d | xargs -n 1 rm -rf
-# clean up plugins
-cd $back/trinity-plugins && rm Makefile
-rm README
-# clean up Inchworm
-cd $back/Inchworm
-rm -rf src config* aclocal.m4 depcomp install-sh Make* missing notes stamp-h1
-cd $back
-
-# Remove Java stack size parameter
-sed -i 's/ -Xss$bflyHeapSpaceInit//' Trinity
-# Update jellyfish location
- find . -type f -exec file {} \; | grep text | cut -f 1 -d ":" | xargs -n 1 grep -H "my \$JELLYFISH_DIR" | grep -v cmd | cut -f 1 -d ":" | sort -u | xargs -n 1 sed -i '/my $JELLYFISH_DIR/c\my $JELLYFISH_DIR = $ENV{"TACC_JELLYFISH_DIR"};'
-# Delete docker
-rm -rf Docker
-# Delete galaxy scripts
-rm -rf galaxy-plugin
-
-cp -r * $RPM_BUILD_ROOT/%{INSTALL_DIR}
+#./configure --prefix=%{INSTALL_DIR} --enable-python-binding --with-sse --with-int128
+./configure --prefix=%{INSTALL_DIR} --with-sse --with-int128
+make DESTDIR=$RPM_BUILD_ROOT -j 4
+make DESTDIR=$RPM_BUILD_ROOT -j 4 install
 
 #-----------------------  
 %endif # BUILD_PACKAGE |
@@ -262,11 +169,13 @@ cp -r * $RPM_BUILD_ROOT/%{INSTALL_DIR}
 cat > $RPM_BUILD_ROOT/%{MODULE_DIR}/%{MODULE_FILENAME} << 'EOF'
 local help_message = [[
 The %{pkg_base_name} module file defines the following environment variables:
-	%{MODULE_VAR}_DIR - the location of the %{pkg_base_name} distribution
 
-Trinity and all utility scripts are automaticially added to your path.
+%{MODULE_VAR}_DIR
+%{MODULE_VAR}_INC
+%{MODULE_VAR}_LIB
 
-Documentation can be found online at %{url}
+This package was also compiled with sse and int128.
+Documentation can be found online at %{url}.
 
 Version %{version}
 ]]
@@ -276,19 +185,18 @@ help(help_message,"\n")
 whatis("Name: %{pkg_base_name}")
 whatis("Version: %{version}")
 whatis("Category: computational biology, genomics")
-whatis("Keywords: assembly, transcript, genomics")
+whatis("Keywords: kmer, k-mer, bloom")
 whatis("Description: %{shortsummary}")
 whatis("URL: %{url}")
 
-prepend_path("PATH",			"%{INSTALL_DIR}")
-prepend_path("PATH",			"%{INSTALL_DIR}/util")
+prepend_path("PATH",		"%{INSTALL_DIR}/bin")
+prepend_path("INCLUDE",		"%{INSTALL_DIR}/include")
+prepend_path("LD_LIBRARY_PATH",	"%{INSTALL_DIR}/lib")
+prepend_path("MANPATH",		"%{INSTALL_DIR}/share/man")
 
-setenv ("%{MODULE_VAR}_DIR",		"%{INSTALL_DIR}")
-setenv ("KMP_AFFINITY",			"scatter")
-
-family("trinity")
-
-depends_on("bowtie/2.3.4","samtools/1.6","jellyfish/2.2.6","python2")
+setenv("%{MODULE_VAR}_DIR",     "%{INSTALL_DIR}")
+setenv("%{MODULE_VAR}_BIN",	"%{INSTALL_DIR}/bin")
+setenv("%{MODULE_VAR}_LIB",	"%{INSTALL_DIR}/lib")
 EOF
   
 cat > $RPM_BUILD_ROOT/%{MODULE_DIR}/.version.%{version} << 'EOF'
