@@ -154,6 +154,8 @@ cpan -i TAP::Harness::Env
 cpan -i Module::Build
 cpan -i Bio::Perl
 
+rm ${BRID}/lib/perl5/x86_64-linux-thread-multi/perllocal.pod
+
 #-----------------------  
 %endif # BUILD_PACKAGE |
 #-----------------------

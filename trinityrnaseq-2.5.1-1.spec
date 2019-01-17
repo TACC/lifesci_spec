@@ -231,7 +231,7 @@ cd $back
 # Remove Java stack size parameter
 sed -i 's/ -Xss$bflyHeapSpaceInit//' Trinity
 # Update jellyfish location
- find . -type f -exec file {} \; | grep text | cut -f 1 -d ":" | xargs -n 1 grep -H "my \$JELLYFISH_DIR" | grep -v cmd | cut -f 1 -d ":" | sort -u | xargs -n 1 sed -i '/my $JELLYFISH_DIR/c\my $JELLYFISH_DIR = $ENV{"TACC_JELLYFISH_DIR"};'
+ find . -type f -exec file {} \; | grep text | cut -f 1 -d ":" | xargs -n 1 grep -H "my \$JELLYFISH_DIR" | grep -v cmd | cut -f 1 -d ":" | sort -u | xargs -n 1 sed -i '/my $JELLYFISH_DIR/c\my $JELLYFISH_DIR = $ENV{"TACC_JELLYFIS_DIR"};'
 # Delete docker
 rm -rf Docker
 # Delete galaxy scripts
