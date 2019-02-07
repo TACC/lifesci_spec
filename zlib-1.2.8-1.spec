@@ -94,7 +94,7 @@ Module file for %{name}
 #--------------------------
 
 # Comment this out if pulling from git
-%setup -n %{pkg_base_name}-%{pkg_version}
+%setup -q -n %{pkg_base_name}-%{pkg_version}
 
 #---------------------------------------
 %build
@@ -149,11 +149,10 @@ patch -p1 < components/interfaces/ipp_zlib/zlib-%{version}.patch
 
 # Compile zlib
 source ${ICC_BIN}/../compilervars.sh intel64
-export CFLAGS="-O3 %{TACC_OPT} -fPIC -m64 -DWITH_IPP -I$IPPROOT/include"
+export CFLAGS="%{TACC_OPT} -O3 -ipo -m64 -DWITH_IPP -I$IPPROOT/include"
 export LDFLAGS="$IPPROOT/lib/intel64/libippdc.a $IPPROOT/lib/intel64/libipps.a $IPPROOT/lib/intel64/libippcore.a"
-#sed -i -e 's~\$(AR) \$(ARFLAGS) \$@ \$(OBJS)~\$(AR) \$(ARFLAGS) \$@ \$(OBJS) ${IPPROOT}/lib/intel64/libippdc.a ${IPPROOT}/lib/intel64/libipps.a ${IPPROOT}/lib/intel64/libippcore.a~' Makefile.in
 ./configure --prefix=%{INSTALL_DIR}
-make -j3 shared
+make -j 8 shared
 make DESTDIR=${RPM_BUILD_ROOT} install
 
 #-----------------------  

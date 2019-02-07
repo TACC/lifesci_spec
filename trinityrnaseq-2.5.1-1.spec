@@ -77,7 +77,7 @@ Module file for %{pkg_base_name}
   rm -rf $RPM_BUILD_ROOT/%{INSTALL_DIR}
 
 # Comment this out if pulling from git
-%setup -n trinityrnaseq-Trinity-v%{pkg_version}
+%setup -q -n trinityrnaseq-Trinity-v%{pkg_version}
 # If using multiple sources. Make sure that the "-n" names match.
 #%setup -T -D -a 1 -n %{pkg_base_name}-%{pkg_version}
 
@@ -114,7 +114,7 @@ Module file for %{pkg_base_name}
 ##################################
 # Manually load modules
 ##################################
-module use ~/apps/intel17/modulefiles
+module use ~/apps/intel18/modulefiles
 module load samtools/1.6 jellyfish/2.2.6 python2
 ##################################
 
@@ -203,12 +203,89 @@ patch util/support_scripts/trinity_install_tests.sh -i - << 'EOF'
 ---
 > if [ -x "$(which samtools 2>/dev/null)" ]
 EOF
+## Patch chrysalis code
+patch Chrysalis/analysis/sequenceUtil.cc -i - << 'EOF'
+53c53
+<   if (fileReader == 0) { // couldn't open file
+---
+>   if (!fileReader.is_open()) { // couldn't open file
+EOF
+patch Chrysalis/GraphFromFasta_MPI.cc -i - << 'EOF'
+51,53c51,53
+< #include<sys/time.h>
+< static struct timeval start,end;
+< void timer_start(){
+---
+> #include <sys/time.h>
+> struct timeval t_start;
+> struct timeval t_end;
+55c55,56
+<   gettimeofday(&start,NULL);
+---
+> void timer_start(){
+>   gettimeofday(&t_start,NULL);
+58d58
+< 
+60,61c60,61
+<   gettimeofday(&end,NULL);
+<   double time_taken = ((end.tv_usec-start.tv_usec) + 1000000*(end.tv_sec - start.tv_sec));
+---
+>   gettimeofday(&t_end,NULL);
+>   double time_taken = ((t_end.tv_usec-t_start.tv_usec) + 1000000*(t_end.tv_sec - t_start.tv_sec));
+EOF
+patch Chrysalis/ReadsToTranscripts_MPI.cc -i - << 'EOF'
+40,41c39,40
+<     
+< static struct timeval start,end;                                                                                                                                                                                                           
+---
+> struct timeval t_start;
+> struct timeval t_end;
+44,47c43
+<    
+<                                                                                                                                                                                                                                           
+<     gettimeofday(&start,NULL);                                                                                                                                                                                                             
+<      
+---
+>   gettimeofday(&t_start,NULL);
+55,57c47,48
+<                               
+<     gettimeofday(&end,NULL);                                                                                                                                                                                                               
+<     double time_taken = ((end.tv_usec-start.tv_usec) + 1000000*(end.tv_sec - start.tv_sec));                                                                                                                                               
+---
+>   gettimeofday(&t_end,NULL);
+>   double time_taken = ((t_end.tv_usec-t_start.tv_usec) + 1000000*(t_end.tv_sec - t_start.tv_sec));
+EOF
+patch Chrysalis/ReadsToTranscripts_MPI_chang.cc -i - << 'EOF'
+36,38c36,38
+< #include<sys/time.h>
+< static struct timeval start,end;
+< void timer_start(){
+---
+> #include <sys/time.h>
+> struct timeval t_start;
+> struct timeval t_end;
+40c40,41
+<   gettimeofday(&start,NULL);
+---
+> void timer_start(){
+>   gettimeofday(&t_start,NULL);
+43d43
+< 
+45,46c45,46
+<   gettimeofday(&end,NULL);
+<   double time_taken = ((end.tv_usec-start.tv_usec) + 1000000*(end.tv_sec - start.tv_sec));
+---
+>   gettimeofday(&t_end,NULL);
+>   double time_taken = ((t_end.tv_usec-t_start.tv_usec) + 1000000*(t_end.tv_sec - t_start.tv_sec));
+EOF
 
 #------------------------------------------------
 # Make Trinity
 #------------------------------------------------
-make -j 8 TRINITY_COMPILER=intel
-make -j 8 TRINITY_COMPILER=intel plugins
+(cd trinity-plugins && tar -xzf ParaFly-0.1.0.tar.gz)
+find . -type f \( -name Makefile\* -o -name configu\* \) -exec grep -l "\-openmp" {} \; | xargs -n 1 -I {} bash -c 'echo {}; sed -i "s/\-openmp/\-qopenmp/" {}'
+make -j 1 TRINITY_COMPILER=intel
+make -j 1 TRINITY_COMPILER=intel plugins
 
 # Remove unnecessary things
 rm -rf trinityrnaseq.wiki
@@ -286,9 +363,8 @@ prepend_path("PATH",			"%{INSTALL_DIR}/util")
 setenv ("%{MODULE_VAR}_DIR",		"%{INSTALL_DIR}")
 setenv ("KMP_AFFINITY",			"scatter")
 
-family("trinity")
-
 depends_on("bowtie/2.3.4","samtools/1.6","jellyfish/2.2.6","python2")
+prereq("bowtie/2.3.4","samtools/1.6","jellyfish/2.2.6","python2")
 EOF
   
 cat > $RPM_BUILD_ROOT/%{MODULE_DIR}/.version.%{version} << 'EOF'

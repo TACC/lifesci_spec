@@ -25,9 +25,9 @@ Summary: %{shortsummary}
 # Create some macros (spec file variables)
 %define major_version 1
 %define minor_version 1
-#%define patch_version 1
+%define patch_version 0
 
-%define pkg_version %{major_version}.%{minor_version}
+%define pkg_version %{major_version}.%{minor_version}.%{patch_version}
 
 ### Toggle On/Off ###
 %include ./include/system-defines.inc
@@ -49,7 +49,7 @@ License:   BSD
 Group:     Applications/Life Sciences
 URL:       https://github.com/zyndagj/BSMAPz
 Packager:  TACC - gzynda@tacc.utexas.edu
-#Source:    %{pkg_base_name}-%{pkg_version}.tar.gz
+Source:    BSMAPz-%{pkg_version}.tar.gz
 
 %package %{PACKAGE}
 Summary: %{shortsummary}
@@ -77,7 +77,7 @@ Module file for %{pkg_base_name}
   rm -rf $RPM_BUILD_ROOT/%{INSTALL_DIR}
 
 # Comment this out if pulling from git
-#%setup -n %{pkg_base_name}-%{pkg_version}
+%setup -qn BSMAPz-%{pkg_version}
 # If using multiple sources. Make sure that the "-n" names match.
 #%setup -T -D -a 1 -n %{pkg_base_name}-%{pkg_version}
 
@@ -116,7 +116,7 @@ Module file for %{pkg_base_name}
 ##################################
 module purge
 module load TACC
-module load python samtools
+module load python2 samtools
 ##################################
 
 echo "Building the package?:    %{BUILD_PACKAGE}"
@@ -146,22 +146,16 @@ export PYTHONPATH=${BI}/lib/python2.7/site-packages:${PYTHONPATH}
 export PYTHONUSERBASE=${BI}
 pip install --user pysam
 
-# Example configure and make
-[ -d BSMAPz ] && rm -rf BSMAPz
-git clone https://github.com/zyndagj/BSMAPz.git
-#cd BSMAPz && git checkout %{version}
-cd BSMAPz && git checkout development
-
 CFLAGS="%{TACC_OPT} -O3 -ipo"
 CXXFLAGS="%{TACC_OPT} -O3 -ipo"
 AR=xiar
 sed -i "s/-march=native/%{TACC_OPT} -O3 -ipo/g" Makefile
 
 # Make and install
-sed -i "/rm $</d" Makefile
-make -j 4 CC=icc CXX=icpc bsmapz
+make -j 8 CC=icc CXX=icpc bsmapz
 make test
 make DESTDIR=${RPM_BUILD_ROOT}/%{INSTALL_DIR} install
+find ${RPM_BUILD_ROOT}/%{INSTALL_DIR}
 
 #-----------------------  
 %endif # BUILD_PACKAGE |

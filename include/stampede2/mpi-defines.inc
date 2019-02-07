@@ -32,6 +32,14 @@
     %define mpi_label 17_0
     %define mpi_module_version 17.0.3
   %endif
+  %if "%{mpiV}" == "18_0"
+    %define mpi_label 18_0
+    %define mpi_module_version 18.0.2
+  %endif
+  %if "%{mpiV}" == "18_2"
+    %define mpi_label 18_0
+    %define mpi_module_version 18.0.2
+  %endif
   %define mpi_fam     impi
   %define mpi_fam_ver impi%{mpi_label}
   %define mpi_module  %{mpi_fam}/%{mpi_module_version}
@@ -39,15 +47,15 @@
 
 %if "%{is_mvapich2}" == "1"
   %if %{undefined mpiV}
-    %define mpi_label 2_2
-    %define mpi_module_version 2.2
+    %define mpi_label 2_3
+    %define mpi_module_version 2.3rc2
   %endif
-  %if "%{mpiV}" == "2_2"
-    %define mpi_label 2_2
-    %define mpi_module_version 2.2
+  %if "%{mpiV}" == "2_3"
+    %define mpi_label 2_3
+    %define mpi_module_version 2.3rc2
   %endif
-  %define mpi_fam mvapich2-knltest    
-  %define mpi_fam_ver mvapich2-knltest_%{mpi_label}
+  %define mpi_fam     mvapich2
+  %define mpi_fam_ver mvapich2-%{mpi_label}
   %define mpi_module  %{mpi_fam}/%{mpi_module_version}
 %endif
 
