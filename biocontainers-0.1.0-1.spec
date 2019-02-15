@@ -3,7 +3,8 @@
 # 2017-08-01
 #
 # Important Build-Time Environment Variables (see name-defines.inc)
-# NO_PACKAGE=1    -> Do Not Build/Rebuild Package RPM
+%define NO_PACKAGE=1
+#   -> Do Not Build/Rebuild Package RPM
 # NO_MODULEFILE=1 -> Do Not Build/Rebuild Modulefile RPM
 #
 # Important Install-Time Environment Variables (see post-defines.inc)
@@ -16,25 +17,25 @@
 # rpm -i --relocate /tmpmod=/opt/apps Bar-modulefile-1.1-1.x86_64.rpm
 # rpm -e Bar-package-1.1-1.x86_64 Bar-modulefile-1.1-1.x86_64
 
-%define shortsummary A Massively Spiffy Yet Delicately Unobtrusive Compression Library
+%define shortsummary Parent module for biocontainer modules
 Summary: %{shortsummary}
 
 # Give the package a base name
-%define pkg_base_name zlib
+%define pkg_base_name biocontainers
 
 # Create some macros (spec file variables)
-%define major_version 1
-%define minor_version 2
-%define patch_version 8
+%define major_version 0
+%define minor_version 1
+%define patch_version 0
 
 %define pkg_version %{major_version}.%{minor_version}.%{patch_version}
 
 ### Toggle On/Off ###
 %include ./include/system-defines.inc
 %include ./include/%{PLATFORM}/rpm-dir.inc                  
-%include ./include/%{PLATFORM}/compiler-defines.inc
-#%include ./include/%{PLATFORM}/mpi-defines.inc
 %include ./include/%{PLATFORM}/name-defines.inc
+#%include ./include/%{PLATFORM}/compiler-defines.inc
+#%include ./include/%{PLATFORM}/mpi-defines.inc
 ########################################
 ############ Do Not Remove #############
 ########################################
@@ -46,30 +47,25 @@ Version:   %{pkg_version}
 
 Release:   1
 License:   BSD
-Group:     Libraries
-URL:       http://zlib.net
+Group:     Applications/Life Sciences
+URL:       https://github.com/TACC/lifesci_spec
 Packager:  TACC - gzynda@tacc.utexas.edu
-Source:    %{pkg_base_name}-%{pkg_version}.tar.gz
-
-# Turn off debug package mode
-%define debug_package %{nil}
-%define dbg           %{nil}
-
+#Source:    %{pkg_base_name}-%{pkg_version}.tar.gz
 
 %package %{PACKAGE}
 Summary: %{shortsummary}
-Group:   Libraries
+Group:   Applications/Life Sciences
 %description package
-%{name}: %{shortsummary}
+%{pkg_base_name}: %{shortsummary}
 
 %package %{MODULEFILE}
 Summary: The modulefile RPM
 Group:   Lmod/Modulefiles
 %description modulefile
-Module file for %{name}
+Module file for %{pkg_base_name}
 
 %description
-%{name}: %{shortsummary}
+%{pkg_base_name}: %{shortsummary}
 
 #---------------------------------------
 %prep
@@ -94,7 +90,9 @@ Module file for %{name}
 #--------------------------
 
 # Comment this out if pulling from git
-%setup -q -n %{pkg_base_name}-%{pkg_version}
+#%setup -n %{pkg_base_name}-%{pkg_version}
+# If using multiple sources. Make sure that the "-n" names match.
+#%setup -T -D -a 1 -n %{pkg_base_name}-%{pkg_version}
 
 #---------------------------------------
 %build
@@ -110,7 +108,7 @@ Module file for %{name}
 ##################################
 # If using build_rpm
 ##################################
-%include ./include/%{PLATFORM}/compiler-load.inc
+#%include ./include/%{PLATFORM}/compiler-load.inc
 #%include ./include/%{PLATFORM}/mpi-load.inc
 #%include ./include/%{PLATFORM}/mpi-env-vars.inc
 ##################################
@@ -140,21 +138,6 @@ echo "Building the modulefile?: %{BUILD_MODULEFILE}"
   # Insert Build/Install Instructions Here
   #========================================
 
-# Source IPP
-tar -xzf $IPPROOT/examples/components_and_examples_lin_ps.tgz ./components/interfaces/ipp_zlib/zlib-1.2.8.patch
-source ${IPPROOT}/bin/ippvars.sh intel64
-
-# Patch zlib
-patch -p1 < components/interfaces/ipp_zlib/zlib-%{version}.patch
-
-# Compile zlib
-source ${ICC_BIN}/../compilervars.sh intel64
-export CFLAGS="%{TACC_OPT} -O3 -ipo -m64 -DWITH_IPP -I$IPPROOT/include -static-intel"
-export LDFLAGS="$IPPROOT/lib/intel64/libippdc.a $IPPROOT/lib/intel64/libipps.a $IPPROOT/lib/intel64/libippcore.a"
-./configure --prefix=%{INSTALL_DIR}
-make -j 8 shared
-make DESTDIR=${RPM_BUILD_ROOT} install
-
 #-----------------------  
 %endif # BUILD_PACKAGE |
 #-----------------------
@@ -176,57 +159,80 @@ make DESTDIR=${RPM_BUILD_ROOT} install
   
 # Write out the modulefile associated with the application
 cat > $RPM_BUILD_ROOT/%{MODULE_DIR}/%{MODULE_FILENAME} << 'EOF'
-local help_message = [[
-The %{pkg_base_name} package is an Intel IPP optimized version of the zlib compression library. More information can be found online at:
+help (
+[[
+                         Biocontainers
+===============================================================
 
-https://software.intel.com/en-us/articles/how-to-use-zlib-with-intel-ipp-opertimization
+TACC has made biocontainers available through standard LMOD
+modules for browsing and command line usability by exposing
+important executables.
 
-For conventience we have included the following environment variables:
+All biocontainer modules have their version prefixed with 
+"ctr-" to help distinguish native packages from containers.
 
- - %{MODULE_VAR}_DIR
- - %{MODULE_VAR}_LIB
- - %{MODULE_VAR}_INC
+Please remember that since these tools live in containers, they
+only function on compute nodes through idev or sbatch.
 
-If you already have an application that relies on a shared zlib library, you can automatically utilize this version by loading the module.
+---------------------------------------------------------------
+Usage
+---------------------------------------------------------------
 
-$ module load ltools
-$ ldd `which pigz`
-$ module load zlib/1.2.8
-$ ldd `which pigz`
+If you are looking for a specific tool, check for it and all
+versions available with
 
-You can also utilize the static and shared zlib libraries as follows:
+  $ module spider [toolname]
 
-For static linking on Linux* OS, 
+If you are not sure what tool you need, and want to browse all
+categories
 
-  icc -O3 -o zpipe_ipp.out zpipe.c -I$IPPROOT/include -I$%{MODULE_VAR}_INC $%{MODULE_VAR}_LIB/libz.a $IPP_LIBS
+  $ module keyword [category]
 
-For dynamic linking on Linux* OS, 
+If you want to browse our entire overwhelming list of modules,
+feel free to do so with
 
-  gcc -O3 -o zpipe_ipp.out zpipe.c -I$%{MODULE_VAR}_INC -L$%{MODULE_VAR}_LIB -lz
+  $ module avail
 
-Documentation: %{url}
+We also disabled paging on LMOD, so you can pipe that output to
+less or grep
 
-Version %{version}
-]]
+  $ module avail | less -S
 
-help(help_message,"\n")
+  $ module avail | grep "toolname"
 
-whatis("Name: %{name}")
-whatis("Version: %{version}")
-whatis("Category: applications, compression")
-whatis("Keywords: compressino, deflate")
-whatis("Description: %{shortsummary}")
-whatis("URL: %{url}")
+---------------------------------------------------------------
+Help
+---------------------------------------------------------------
 
-prepend_path("LD_LIBRARY_PATH",	"%{INSTALL_DIR}/lib")
-prepend_path("MANPATH",		"%{INSTALL_DIR}/share/man")
+If the tool is broken, please create an issue on
 
-local ipplib = os.getenv("IPPROOT") .. "/lib/intel64"
+  https://github.com/BioContainers/containers/issues
 
-setenv("%{MODULE_VAR}_DIR",     "%{INSTALL_DIR}")
-setenv("%{MODULE_VAR}_LIB",	"%{INSTALL_DIR}/lib")
-setenv("IPP_LIBS",		ipplib .. "/libippdc.a " .. ipplib .. "/libipps.a " .. ipplib .. "/libippcore.a")
-setenv("%{MODULE_VAR}_INC",	"%{INSTALL_DIR}/include")
+If the module is broken or the executable is not exposed
+through the module file, please create a ticket on
+
+  https://portal.tacc.utexas.edu/tacc-consulting
+
+and cc:gzynda@tacc.utexas.edu
+]])
+
+whatis("Name: biocontainers")
+whatis("Version: 0.1.0")
+whatis("Category: Biology")
+whatis("Keywords: bio, containers, biocontainer, bioconda, singularity")
+whatis("Description: Biocontainers accessible through module files")
+whatis("URL: https://biocontainers.pro/")
+
+depends_on("tacc-singularity")
+prereq("tacc-singularity")
+
+local bcd = "/work/projects/singularity/TACC/bio_modules"
+setenv("BIOCONTAINER_DIR",	bcd)
+setenv("LMOD_CACHED_LOADS",	"yes")
+setenv("LMOD_PAGER",		"none")
+setenv("LMOD_REDIRECT",		"yes")
+prepend_path("LMOD_RC",		bcd .. "/lmod/lmodrc.lua")
+prepend_path("MODULEPATH",	bcd .. "/modulefiles")
 EOF
   
 cat > $RPM_BUILD_ROOT/%{MODULE_DIR}/.version.%{version} << 'EOF'
@@ -239,7 +245,8 @@ set     ModulesVersion      "%{version}"
 EOF
   
   # Check the syntax of the generated lua modulefile
-  %{SPEC_DIR}/scripts/checkModuleSyntax $RPM_BUILD_ROOT/%{MODULE_DIR}/%{MODULE_FILENAME}
+  #%{SPEC_DIR}/scripts/checkModuleSyntax $RPM_BUILD_ROOT/%{MODULE_DIR}/%{MODULE_FILENAME}
+  # This chokes because it activates the module
 
 #--------------------------
 %endif # BUILD_MODULEFILE |
