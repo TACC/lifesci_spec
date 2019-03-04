@@ -273,7 +273,7 @@ whatis("Keywords: Biology, Genomics, assembly, long-reads, nanopore")
 whatis("Description: %{shortsummary}")
 whatis("URL: %{url}")
 
-prereq("python")
+depends_on("python2")
 
 prepend_path("PATH",		"%{INSTALL_DIR}/bin")
 

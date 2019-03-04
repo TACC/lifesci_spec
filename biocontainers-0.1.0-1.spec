@@ -213,7 +213,7 @@ through the module file, please create a ticket on
 
   https://portal.tacc.utexas.edu/tacc-consulting
 
-and cc:gzynda@tacc.utexas.edu
+and cc gzynda@tacc.utexas.edu
 ]])
 
 whatis("Name: biocontainers")
@@ -232,7 +232,9 @@ setenv("LMOD_CACHED_LOADS",	"yes")
 setenv("LMOD_PAGER",		"none")
 setenv("LMOD_REDIRECT",		"yes")
 prepend_path("LMOD_RC",		bcd .. "/lmod/lmodrc.lua")
-prepend_path("MODULEPATH",	bcd .. "/modulefiles")
+if(mode() ~= "spider") then
+	prepend_path("MODULEPATH",	bcd .. "/modulefiles")
+end
 EOF
   
 cat > $RPM_BUILD_ROOT/%{MODULE_DIR}/.version.%{version} << 'EOF'
@@ -245,7 +247,7 @@ set     ModulesVersion      "%{version}"
 EOF
   
   # Check the syntax of the generated lua modulefile
-  #%{SPEC_DIR}/scripts/checkModuleSyntax $RPM_BUILD_ROOT/%{MODULE_DIR}/%{MODULE_FILENAME}
+  %{SPEC_DIR}/scripts/checkModuleSyntax $RPM_BUILD_ROOT/%{MODULE_DIR}/%{MODULE_FILENAME}
   # This chokes because it activates the module
 
 #--------------------------
