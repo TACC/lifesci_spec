@@ -28,6 +28,10 @@ MODLOC=/opt/apps
 RPMLOC=/home1/apps
 
 case "$TACC_SYSTEM" in
+	frontera)
+		RPMDIR=/admin/build/admin/rpms/${TACC_SYSTEM}/RPMS/x86_64
+		address=staff.${TACC_SYSTEM}.tacc.utexas.edu
+		;;
 	stampede2)
 		RPMDIR=/admin/build/admin/rpms/${TACC_SYSTEM}/RPMS/x86_64
 		address=staff.${TACC_SYSTEM}.tacc.utexas.edu
@@ -45,7 +49,7 @@ case "$TACC_SYSTEM" in
 		address=staff.${TACC_SYSTEM}.tacc.utexas.edu
 		;;
 	maverick2)
-		RPMDIR=/home1/jail-7.4/admin/build/admin/rpms/maverick2/RPMS/x86_64
+		RPMDIR=/home1/jail-7.6/admin/build/admin/rpms/maverick2/RPMS/x86_64
 		address=staff.${TACC_SYSTEM}.tacc.utexas.edu
 		;;
 	hikari)
